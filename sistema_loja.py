@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-import os
 
+# ----------------- Tela de Login -----------------
 class TelaLogin:
     def __init__(self, root):
         self.root = root
@@ -25,18 +25,19 @@ class TelaLogin:
         usuario = self.entry_usuario.get()
         senha = self.entry_senha.get()
 
-        if not os.path.exists("clientes.txt"):
-            messagebox.showerror("Erro", "Nenhum cliente cadastrado ainda.")
-            return
-
-        with open("clientes.txt", "r") as file:
-            for linha in file:
-                user_file, senha_file, _ = linha.strip().split(";")
-                if usuario == user_file and senha == senha_file:
-                    messagebox.showinfo("Login", "Login realizado com sucesso!")
-                    self.root.destroy()
-                    self.abrir_sistema_pedidos()
-                    return
+        try:
+            with open("clientes.txt", "r") as file:
+                for linha in file:
+                    user_file, senha_file, _ = linha.strip().split(";")
+                    if usuario == user_file and senha == senha_file:
+                        messagebox.showinfo("Login", "Login realizado com sucesso!")
+                        self.root.destroy()
+                        root_principal = tk.Tk()
+                        SistemaPedidos(root_principal)
+                        root_principal.mainloop()
+                        return
+        except FileNotFoundError:
+            pass
 
         messagebox.showerror("Erro", "Usuário ou senha inválidos.")
 
@@ -44,12 +45,7 @@ class TelaLogin:
         cadastro_janela = tk.Toplevel(self.root)
         TelaCadastro(cadastro_janela)
 
-    def abrir_sistema_pedidos(self):
-        root_principal = tk.Tk()
-        SistemaPedidos(root_principal)
-        root_principal.mainloop()
-
-
+# ----------------- Tela de Cadastro -----------------
 class TelaCadastro:
     def __init__(self, root):
         self.root = root
@@ -90,13 +86,14 @@ class TelaCadastro:
             messagebox.showerror("Erro", "As senhas não coincidem.")
             return
 
-        if os.path.exists("clientes.txt"):
+        try:
             with open("clientes.txt", "r") as file:
                 for linha in file:
-                    user_file = linha.strip().split(";")[0]
-                    if user_file == usuario:
+                    if usuario == linha.strip().split(";")[0]:
                         messagebox.showerror("Erro", "Usuário já existe.")
                         return
+        except FileNotFoundError:
+            pass
 
         with open("clientes.txt", "a") as file:
             file.write(f"{usuario};{senha};{nome}\n")
@@ -104,7 +101,7 @@ class TelaCadastro:
         messagebox.showinfo("Sucesso", f"Cliente '{nome}' cadastrado com sucesso!")
         self.root.destroy()
 
-
+# ----------------- Sistema de Pedidos -----------------
 class SistemaPedidos:
     def __init__(self, root):
         self.root = root
@@ -143,6 +140,7 @@ class SistemaPedidos:
 
         pedido = f"{nome} - {qtd}x {roupa} (Tamanho: {tamanho})"
         self.pedidos.append(pedido)
+        messagebox.showinfo("Sucesso", "Pedido adicionado com sucesso!")
 
         self.nome_entry.delete(0, tk.END)
         self.roupa_combobox.set('')
@@ -151,45 +149,80 @@ class SistemaPedidos:
         self.qtd_spinbox.insert(0, '1')
 
     def abrir_resumo_pedidos(self):
-        resumo_janela = tk.Toplevel(self.root)
-        resumo_janela.title("Resumo dos Pedidos")
-        resumo_janela.geometry("400x300")
+        ResumoPedidos(tk.Toplevel(self.root), self.pedidos)
 
-        tk.Label(resumo_janela, text="Pedidos Realizados:", font=("Arial", 12, "bold")).pack(pady=10)
+# ----------------- Tela de Resumo com Edição -----------------
+class ResumoPedidos:
+    def __init__(self, root, pedidos):
+        self.root = root
+        self.root.title("Resumo dos Pedidos")
+        self.root.geometry("500x350")
+        self.pedidos = pedidos
 
-        listbox = tk.Listbox(resumo_janela, width=60)
-        listbox.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        tk.Label(root, text="Pedidos Realizados:", font=("Arial", 12, "bold")).pack(pady=10)
 
-        if self.pedidos:
-            for pedido in self.pedidos:
-                listbox.insert(tk.END, pedido)
-        else:
-            listbox.insert(tk.END, "Nenhum pedido realizado ainda.")
+        self.listbox = tk.Listbox(root, width=70)
+        self.listbox.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-    def adicionar_pedido(self):
-        nome = self.nome_entry.get()
-        roupa = self.roupa_combobox.get()
-        tamanho = self.tamanho_combobox.get()
-        qtd = self.qtd_spinbox.get()
+        self.atualizar_listbox()
 
-        if not nome or not roupa or not tamanho or not qtd:
-            messagebox.showwarning("Atenção", "Preencha todos os campos.")
+        frame_botoes = tk.Frame(root)
+        frame_botoes.pack(pady=10)
+
+        tk.Button(frame_botoes, text="Editar", command=self.editar_pedido).pack(side=tk.LEFT, padx=5)
+        tk.Button(frame_botoes, text="Remover", command=self.remover_pedido).pack(side=tk.LEFT, padx=5)
+
+    def atualizar_listbox(self):
+        self.listbox.delete(0, tk.END)
+        for pedido in self.pedidos:
+            self.listbox.insert(tk.END, pedido)
+
+    def editar_pedido(self):
+        selecionado = self.listbox.curselection()
+        if not selecionado:
+            messagebox.showwarning("Aviso", "Selecione um pedido para editar.")
             return
 
-        pedido = f"{nome} - {qtd}x {roupa} (Tamanho: {tamanho})"
-        self.pedidos.append(pedido)
+        index = selecionado[0]
+        pedido_antigo = self.pedidos[index]
 
+        nova_janela = tk.Toplevel(self.root)
+        nova_janela.title("Editar Pedido")
 
-        self.nome_entry.delete(0, tk.END)
-        self.roupa_combobox.set('')
-        self.tamanho_combobox.set('')
-        self.qtd_spinbox.delete(0, tk.END)
-        self.qtd_spinbox.insert(0, '1')
+        tk.Label(nova_janela, text="Novo Pedido:").pack()
+        entry = tk.Entry(nova_janela, width=60)
+        entry.insert(0, pedido_antigo)
+        entry.pack(pady=5)
 
-        messagebox.showinfo("Pedido Adicionado", "Pedido realizado com sucesso!")
+        def salvar_edicao():
+            novo_pedido = entry.get()
+            if not novo_pedido:
+                messagebox.showwarning("Aviso", "O pedido não pode estar vazio.")
+                return
+            self.pedidos[index] = novo_pedido
+            self.atualizar_listbox()
+            nova_janela.destroy()
+            messagebox.showinfo("Sucesso", "Pedido editado com sucesso!")
 
+        tk.Button(nova_janela, text="Salvar", command=salvar_edicao).pack(pady=10)
+
+    def remover_pedido(self):
+        selecionado = self.listbox.curselection()
+        if not selecionado:
+            messagebox.showwarning("Aviso", "Selecione um pedido para remover.")
+            return
+
+        index = selecionado[0]
+        confirm = messagebox.askyesno("Confirmação", "Deseja realmente remover o pedido?")
+        if confirm:
+            del self.pedidos[index]
+            self.atualizar_listbox()
+            messagebox.showinfo("Sucesso", "Pedido removido com sucesso!")
+
+# ----------------- Execução -----------------
 if __name__ == "__main__":
     root = tk.Tk()
     TelaLogin(root)
     root.mainloop()
+
 
