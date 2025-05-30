@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-# ----------------- Tela de Login -----------------
 class TelaLogin:
     def __init__(self, root):
         self.root = root
@@ -45,7 +44,6 @@ class TelaLogin:
         cadastro_janela = tk.Toplevel(self.root)
         TelaCadastro(cadastro_janela)
 
-# ----------------- Tela de Cadastro -----------------
 class TelaCadastro:
     def __init__(self, root):
         self.root = root
@@ -101,7 +99,6 @@ class TelaCadastro:
         messagebox.showinfo("Sucesso", f"Cliente '{nome}' cadastrado com sucesso!")
         self.root.destroy()
 
-# ----------------- Sistema de Pedidos -----------------
 class SistemaPedidos:
     def __init__(self, root):
         self.root = root
@@ -151,7 +148,6 @@ class SistemaPedidos:
     def abrir_resumo_pedidos(self):
         ResumoPedidos(tk.Toplevel(self.root), self.pedidos)
 
-# ----------------- Tela de Resumo com Edição -----------------
 class ResumoPedidos:
     def __init__(self, root, pedidos):
         self.root = root
@@ -219,7 +215,6 @@ class ResumoPedidos:
             self.atualizar_listbox()
             messagebox.showinfo("Sucesso", "Pedido removido com sucesso!")
 
-# ----------------- Execução -----------------
 if __name__ == "__main__":
     root = tk.Tk()
     TelaLogin(root)
